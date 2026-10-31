@@ -16,7 +16,7 @@ nothing to install on remote machines. Remote hosts are reached through Orca, no
 ## Install
 
 ```text
-/plugin marketplace add ~/Repos/orca-fleet-stats
+/plugin marketplace add Aethryl/orca-fleet-stats
 /plugin install orca-fleet-stats@orca-fleet-stats
 /reload-plugins
 ```
