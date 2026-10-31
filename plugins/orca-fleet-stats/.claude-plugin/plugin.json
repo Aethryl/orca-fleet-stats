@@ -1,0 +1,9 @@
+{
+  "name": "orca-fleet-stats",
+  "version": "0.1.0",
+  "description": "Activity statistics from local Claude Code, Codex and opencode transcripts: tool calls, error rates, latency, sessions and subagent spawns, merged across every machine Orca can reach.",
+  "author": {
+    "name": "Fabian Rutten"
+  },
+  "keywords": ["statistics", "transcripts", "claude-code", "codex", "opencode", "usage"]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "orca-fleet-stats",
+  "description": "Activity statistics from AI coding agent transcripts, across Orca hosts",
+  "owner": {
+    "name": "Fabian Rutten"
+  },
+  "plugins": [
+    {
+      "name": "orca-fleet-stats",
+      "source": "./plugins/orca-fleet-stats",
+      "description": "Tool calls, errors, latency, sessions and subagent spawns from Claude Code, Codex and opencode transcripts, merged across Orca hosts",
+      "version": "0.1.0",
+      "author": {
+        "name": "Fabian Rutten"
+      },
+      "category": "development",
+      "keywords": ["statistics", "transcripts", "claude-code", "codex", "opencode", "usage"]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+[project]
+name = "orca-fleet-stats"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+pythonpath = ["plugins/orca-fleet-stats/bin"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ty.environment]
+extra-paths = ["plugins/orca-fleet-stats/bin"]
+
+[[tool.ty.overrides]]
+include = ["tests/**"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"

@@ -1,0 +1,6 @@
+{"timestamp":"2026-10-02T09:00:00.000Z","type":"session_meta","payload":{"id":"c1","cwd":"/home/u/Repos/Worktrees/app/feat","source":"cli"}}
+{"timestamp":"2026-10-02T09:00:01.000Z","type":"turn_context","payload":{"model":"gpt-x"}}
+{"timestamp":"2026-10-02T09:00:02.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"FOO=1 rg x\"}","call_id":"a"}}
+{"timestamp":"2026-10-02T09:00:03.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"a","output":"Process exited with code 1\nOutput:\n"}}
+{"timestamp":"2026-10-02T09:00:04.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"ls\"}","call_id":"b"}}
+{"timestamp":"2026-10-02T09:00:04.500Z","type":"response_item","payload":{"type":"function_call_output","call_id":"b","output":"Process exited with code 0\n"}}
