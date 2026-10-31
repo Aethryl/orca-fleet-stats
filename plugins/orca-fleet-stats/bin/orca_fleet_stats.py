@@ -644,6 +644,32 @@ def collect_from(sources: dict, since: str | None, usage_sources: dict | None = 
     }
 
 
+CACHE_DIR = HOME / ".cache" / "claude-bar"
+CACHE_FILE_MAX = 1 << 20
+CACHE_NAME = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,127}")
+
+
+def cache_name(value: str) -> str:
+    """A bare file name under the claude-bar cache; it is also passed on the remote command line."""
+    if not CACHE_NAME.fullmatch(value) or ".." in value:
+        raise argparse.ArgumentTypeError(f"not a plain cache file name: {value!r}")
+    return value
+
+
+def read_cache_files(names: Iterable[str], root: Path = CACHE_DIR) -> dict[str, Any]:
+    """Parsed JSON of each named file under root; null when it is missing, too large or not JSON."""
+    out: dict[str, Any] = {}
+    for name in names:
+        out[name] = None
+        path = root / cache_name(name)
+        try:
+            if path.stat().st_size <= CACHE_FILE_MAX:
+                out[name] = json.loads(path.read_text())
+        except (OSError, ValueError):
+            pass
+    return out
+
+
 SENTINEL = "ORCA_FLEET"
 CHUNK = 900
 BATCH = 16
@@ -803,9 +829,12 @@ def upload_lines(script: bytes) -> list[str]:
     return [f"printf %s '{b64[i : i + CHUNK]}' >> \"$T/s.b64\"" for i in range(0, len(b64), CHUNK)]
 
 
-def fetch_remote(env: str, since: str | None, agents: list[str], timeout: float = 900) -> dict:
+def fetch_remote(
+    env: str, since: str | None, agents: list[str], timeout: float = 900, files: Iterable[str] = ()
+) -> dict:
     nonce = uuid.uuid4().hex[:12]
     args = f"--encode {nonce}" + (f" --since {since}" if since else "") + "".join(f" --agent {a}" for a in agents)
+    args += "".join(f" --cache-file {cache_name(n)}" for n in files)
     term = Terminal(env)
     try:
         term.open()
@@ -837,8 +866,14 @@ def fetch_remote(env: str, since: str | None, agents: list[str], timeout: float 
         term.close()
 
 
-def fetch_host(host: dict, since: str | None, agents: list[str]) -> dict:
-    data = collect(since, agents) if host["kind"] == "local" else fetch_remote(host["name"], since, agents)
+def fetch_host(host: dict, since: str | None, agents: list[str], files: Iterable[str] = ()) -> dict:
+    files = list(files)
+    if host["kind"] == "local":
+        data = collect(since, agents)
+        if files:
+            data["files"] = read_cache_files(files)
+    else:
+        data = fetch_remote(host["name"], since, agents, files=files)
     data["label"] = host["label"]
     return data
 
@@ -1270,6 +1305,8 @@ def render_html(res: dict, period: str) -> str:
 
 def cmd_collect(a: argparse.Namespace) -> int:
     data = collect(parse_since(a.since), a.agent or AGENTS)
+    if a.cache_file:
+        data["files"] = read_cache_files(a.cache_file)
     if a.encode:
         sys.stdout.write(encode_payload(data, a.encode))
     else:
@@ -1288,13 +1325,15 @@ def cmd_report(a: argparse.Namespace) -> int:
     hosts = []
     for host in targets:
         try:
-            hosts.append(fetch_host(host, since, agents))
+            hosts.append(fetch_host(host, since, agents, a.cache_file or []))
         except (HostError, OSError, ValueError) as e:
             print(f"orca-fleet-stats: host {host['name']} failed: {e}", file=sys.stderr)
     if not hosts:
         print("orca-fleet-stats: no host produced data", file=sys.stderr)
         return 1
     res = analyze(hosts, Filters(since, a.agent, a.project, a.tool))
+    if a.cache_file:
+        res["files"] = {h["label"]: h.get("files") or {} for h in hosts}
     if a.html:
         Path(a.html).write_text(render_html(res, a.period))
         print(f"wrote {a.html}", file=sys.stderr)
@@ -1306,6 +1345,9 @@ def cmd_report(a: argparse.Namespace) -> int:
     return 0
 
 
+CACHE_FILE_HELP = "also return ~/.cache/claude-bar/NAME (JSON) from each host; repeatable"
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="orca-fleet-stats", description="Activity statistics from local AI coding agent transcripts"
@@ -1315,6 +1357,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--since")
     c.add_argument("--agent", action="append", choices=AGENTS)
     c.add_argument("--encode", metavar="NONCE", help=argparse.SUPPRESS)
+    c.add_argument("--cache-file", action="append", type=cache_name, metavar="NAME", help=CACHE_FILE_HELP)
     c.set_defaults(fn=cmd_collect)
     r = sub.add_parser("report", help="report across one or more hosts")
     r.add_argument(
@@ -1328,6 +1371,7 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--limit", type=int, default=15)
     r.add_argument("--json", action="store_true")
     r.add_argument("--html", metavar="FILE")
+    r.add_argument("--cache-file", action="append", type=cache_name, metavar="NAME", help=CACHE_FILE_HELP)
     r.set_defaults(fn=cmd_report)
     return p
 

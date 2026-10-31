@@ -26,6 +26,7 @@ orca-fleet-stats collect --since 30d
 | `--limit` | rows per table, default 15 |
 | `--json` | machine-readable output |
 | `--html FILE` | static report with inline CSS and SVG, light and dark |
+| `--cache-file NAME` | also return `~/.cache/claude-bar/NAME` (JSON) from each host; repeatable |
 
 ## Names
 
@@ -70,3 +71,10 @@ Every list row has the same fields as `total` plus `key`. `n` is messages; `inpu
 input tokens; `usd` is rounded to 4 decimals. Lists are sorted by `usd` descending, `per_*` by
 key ascending. `collect` output gains `usage`: rows of `day, agent, project, model` with the
 same counters, merged across hosts by `report`.
+
+## Cache files
+
+`--cache-file NAME` (on `report` and `collect`) reads `~/.cache/claude-bar/NAME` on each host
+in the same run, for example the claude bar pace samples. Names are plain file names (no `/`,
+no leading dot, no `..`); files over 1 MiB, missing files and invalid JSON come back as `null`.
+`report --json` adds `"files": {"<host label>": {"<NAME>": <parsed JSON or null>}}`.

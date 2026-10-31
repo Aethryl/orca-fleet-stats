@@ -1,3 +1,4 @@
+import argparse
 import json
 import sqlite3
 from pathlib import Path
@@ -350,3 +351,41 @@ def test_cost_collect_merge_and_filters(tmp_path):
     res = a.analyze([h1, h2], a.Filters())
     assert "Cost (API-price estimate)" in a.render_text(res, 5, "week")
     assert "Cost by model" in a.render_html(res, "week")
+
+
+@pytest.mark.parametrize("name", ["pace.json", "pace-7d.json", "limits_v2.json"])
+def test_cache_name_accepts_plain_names(name):
+    assert a.cache_name(name) == name
+
+
+@pytest.mark.parametrize("name", ["", ".hidden", "../x", "a/b", "a..json", "x;rm", "a b", "x" * 200])
+def test_cache_name_rejects_paths_and_shell(name):
+    with pytest.raises(argparse.ArgumentTypeError):
+        a.cache_name(name)
+
+
+def test_read_cache_files(tmp_path):
+    (tmp_path / "pace.json").write_text(json.dumps({"resets_at": 1, "samples": [[1, 2]]}))
+    (tmp_path / "bad.json").write_text("{nope")
+    got = a.read_cache_files(["pace.json", "bad.json", "missing.json"], root=tmp_path)
+    assert got == {"pace.json": {"resets_at": 1, "samples": [[1, 2]]}, "bad.json": None, "missing.json": None}
+
+
+def test_cache_file_size_cap(tmp_path, monkeypatch):
+    (tmp_path / "big.json").write_text("[" + "0," * 10 + "0]")
+    monkeypatch.setattr(a, "CACHE_FILE_MAX", 5)
+    assert a.read_cache_files(["big.json"], root=tmp_path) == {"big.json": None}
+
+
+def test_parser_cache_file_flag():
+    args = a.build_parser().parse_args(["report", "--cache-file", "pace.json", "--cache-file", "pace-7d.json"])
+    assert args.cache_file == ["pace.json", "pace-7d.json"]
+    with pytest.raises(SystemExit):
+        a.build_parser().parse_args(["collect", "--cache-file", "../../etc/passwd"])
+
+
+def test_collect_includes_cache_files(monkeypatch, capsys):
+    monkeypatch.setattr(a, "collect", lambda since, agents: {"buckets": []})
+    monkeypatch.setattr(a, "read_cache_files", lambda names: {n: {"ok": True} for n in names})
+    assert a.main(["collect", "--cache-file", "pace.json"]) == 0
+    assert json.loads(capsys.readouterr().out)["files"] == {"pace.json": {"ok": True}}
