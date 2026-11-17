@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/logo-dark.svg">
-    <img src=".github/logo-light.svg" width="400" height="64" alt="orca-fleet-stats">
+    <img src=".github/logo-light.svg" width="333" height="64" alt="orca-fleet-stats">
   </picture>
 </p>
 
