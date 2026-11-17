@@ -6,8 +6,8 @@
 orca-fleet-stats report
 orca-fleet-stats report --since 7d --agent claude --tool Bash
 orca-fleet-stats report --project my-repo --period day --limit 30
-orca-fleet-stats report --host thanatos
-orca-fleet-stats report --host local --host thanatos
+orca-fleet-stats report --host my-server
+orca-fleet-stats report --host local --host my-server
 orca-fleet-stats report --json
 orca-fleet-stats report --html stats.html
 orca-fleet-stats collect --since 30d
